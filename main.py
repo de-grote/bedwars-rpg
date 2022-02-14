@@ -1,6 +1,8 @@
 import pygame
 import os.path as path
 from functools import cache
+from math import floor
+from stages import Stages
 
 
 class Game:
@@ -16,13 +18,9 @@ class Game:
         self.player: Player = Player(self)
         self.cam: Cam = Cam(self)
         self.keys: list[bool] = []
-        self.platforms: list[Platform] = [
-            Platform("bedrock.png", (144, 128), (16, 16)),
-            Platform("bedrock.png", (128, 112), (16, 16)),
-            Platform("bedrock.png", (96, 128), (16, 16)),
-            Platform("bedrock.png", (112, 112), (16, 16)),
-            Platform("bed.png", (112, 135), (32, 9)),
-        ]
+        self.occupied: set[tuple[int, int]] = set()
+        self.platforms: set[Platform] = set()
+        self.load_scene(0)
         self.loop()
 
     def loop(self):
@@ -40,21 +38,39 @@ class Game:
                 raise SystemExit("Thanks for playing!")
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.place_block(event.pos)
+        # TEMP
+        if self.keys[pygame.K_q]:
+            self.load_scene(0)
         return
 
     def render(self) -> None:
         self.screen.fill((0, 200, 255))
-        self.player.render()
+        self.screen.blit(*self.player.render())
         for p in self.platforms:
-            p.render(self.screen, self.scale, (self.cam.x, self.cam.y))
+            self.screen.blit(*p.render(self.scale, (self.cam.x, self.cam.y)))
         pygame.display.update()
         return
 
     def place_block(self, pos: tuple[int, int]) -> None:
-        self.platforms.append(Platform("bedrock.png", (
-            (pos[0] / (self.scale * 16) - self.cam.x / 16).__floor__() * 16,
-            (pos[1] / (self.scale * 16) - self.cam.y / 16).__floor__() * 16
-            ), (16, 16)))
+        x = floor(pos[0] / (self.scale * 16) - self.cam.x / 16)
+        y = floor(pos[1] / (self.scale * 16) - self.cam.y / 16)
+        if (x, y) in self.occupied:
+            return
+        if (x + 1, y) in self.occupied or (x - 1, y) in self.occupied \
+                or (x, y + 1) in self.occupied or (x, y - 1) in self.occupied:
+            if self.player.x + self.player.width <= x * 16 or x * 16 + 16 <= self.player.x or \
+                    self.player.y + self.player.height <= y * 16 or y * 16 + 16 <= self.player.y:
+                self.occupied.add((x, y))
+                self.platforms.add(Platform("bedrock.png", (x * 16, y * 16), (16, 16)))
+
+    def load_scene(self, scene_number: int):
+        self.occupied.clear()
+        self.platforms.clear()
+        scene: dict = Stages.stages[scene_number]
+        self.platforms.update(Platform(*s) for s in scene["platforms"])
+        self.occupied.update(scene["occupied"])
+        self.player.pos = scene["player"]
+        self.cam.all = scene["cam"]
 
 
 class Player:
@@ -140,15 +156,26 @@ class Player:
                     self.x += 1
 
     def collision(self) -> bool:
-        if self.x + self.game.cam.x < 0 or self.y + self.game.cam.y < 0 or self.x + self.width + self.game.cam.x > self.game.screen_x or self.y + self.height + self.game.cam.y > self.game.screen_y:
+        if self.x + self.game.cam.x < 0 or self.y + self.game.cam.y < 0 or \
+                self.x + self.width + self.game.cam.x > self.game.screen_x or \
+                self.y + self.height + self.game.cam.y > self.game.screen_y:
             return True
         for p in self.game.platforms:
             if self.y + self.height > p.top and self.y < p.bottom and self.x + self.width > p.left and self.x < p.right:
                 return True
         return False
 
-    def render(self):
-        self.game.screen.blit(self.sprite, ((self.x + self.game.cam.x) * self.game.scale, (self.y + self.game.cam.y) * self.game.scale))
+    def render(self) -> tuple[pygame.Surface, tuple[int, int]]:
+        return self.sprite, ((self.x + self.game.cam.x) * self.game.scale, (self.y + self.game.cam.y) * self.game.scale)
+
+    @property
+    def pos(self):
+        return self.x, self.y
+
+    @pos.setter
+    def pos(self, pos: dict[str: int]):
+        self.x = pos["x"]
+        self.y = pos["y"]
 
 
 class Cam:
@@ -159,7 +186,7 @@ class Cam:
         self.max_x: int | None = None
         self.min_x: int | None = None
         self.max_y: int | None = None
-        self.min_y: int | None = 0
+        self.min_y: int | None = None
 
     @property
     def x(self) -> int:
@@ -185,6 +212,19 @@ class Cam:
         if self.min_y is not None and self._y < self.min_y:
             self._y = self.min_y
 
+    @property
+    def all(self) -> tuple[int, int, int | None, int | None, int | None, int | None]:
+        return self._x, self._y, self.max_x, self.min_x, self.max_y, self.min_y
+
+    @all.setter
+    def all(self, info) -> None:
+        self._x = info["x"]
+        self._y = info["y"]
+        self.max_x = info["max_x"]
+        self.min_x = info["min_x"]
+        self.max_y = info["max_y"]
+        self.min_y = info["min_y"]
+
 
 class Platform:
     scale: int = 1
@@ -194,8 +234,8 @@ class Platform:
         self.x, self.y = pos
         self.width, self.height = size
 
-    def render(self, screen, scale: int, offset: tuple[int, int]):
-        screen.blit(self.sprite, ((self.x + offset[0]) * scale, (self.y + offset[1]) * scale))
+    def render(self, scale: int, offset: tuple[int, int]) -> tuple[pygame.Surface, tuple[int, int]]:
+        return self.sprite, ((self.x + offset[0]) * scale, (self.y + offset[1]) * scale)
 
     @property
     def top(self) -> int:

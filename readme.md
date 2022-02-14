@@ -6,15 +6,15 @@ This game is currently in development, don't have high expectations for individu
 
 Currently, the game includes:
 
-* (mostly) working collision
+* working collision
 * working sneaking, running, and walking
 * a (not so nice) scrolling camara
 * placeable blocks
+* a way to make stages if you know what you're doing (loading in not included)
 
 Things that will be added soon:
 
 * better camara scrolling
-* limitations to where you can place blocks (not in the player, next to other blocks, etc)
 * more and better assets (that aren't stolen)
 * customisable controls
 
@@ -35,12 +35,13 @@ Controls:
 * CTRL to sprint
 * L-SHIFT to sneak
 * any click to place block
+* Q to reload scene
 
 ---
 
 Known bugs:
 
-* placing a block near the edge of the screen and in the player freezes the game
+* None
 
 ---
 
@@ -48,7 +49,7 @@ How to run:
 
 Currently, there is no build to just run the game, one will come later.
 
-To run the game, download the source code, you need main.py and the assets folder at minimum to run.
+To run the game, download the source code, you need main.py, stages.py and the assets folder at minimum to run.
 
 Make sure you have a python interpreter installed of version 3.10+,
 
