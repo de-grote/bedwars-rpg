@@ -1,8 +1,8 @@
 import pygame
 import os.path as path
+import json
 from functools import cache
 from math import floor
-from stages import Stages
 
 
 class Game:
@@ -20,7 +20,11 @@ class Game:
         self.keys: list[bool] = []
         self.occupied: set[tuple[int, int]] = set()
         self.platforms: set[Platform] = set()
-        self.load_scene(0)
+        with open("stages.json", "r") as f:
+            self.stages = json.load(f)
+        with open("controls.json", "r") as f:
+            self.controls = json.load(f)
+        self.load_scene("test_stage")
         self.loop()
 
     def loop(self):
@@ -40,7 +44,7 @@ class Game:
                 self.place_block(event.pos)
         # TEMP
         if self.keys[pygame.K_q]:
-            self.load_scene(0)
+            self.load_scene("test_stage")
         return
 
     def render(self) -> None:
@@ -56,19 +60,19 @@ class Game:
         y = floor(pos[1] / (self.scale * 16) - self.cam.y / 16)
         if (x, y) in self.occupied:
             return
-        if (x + 1, y) in self.occupied or (x - 1, y) in self.occupied \
-                or (x, y + 1) in self.occupied or (x, y - 1) in self.occupied:
-            if self.player.x + self.player.width <= x * 16 or x * 16 + 16 <= self.player.x or \
-                    self.player.y + self.player.height <= y * 16 or y * 16 + 16 <= self.player.y:
-                self.occupied.add((x, y))
-                self.platforms.add(Platform("bedrock.png", (x * 16, y * 16), (16, 16)))
+        if ((x + 1, y) in self.occupied or (x - 1, y) in self.occupied or
+            (x, y + 1) in self.occupied or (x, y - 1) in self.occupied) and \
+            (self.player.x + self.player.width <= x * 16 or x * 16 + 16 <= self.player.x or
+             self.player.y + self.player.height <= y * 16 or y * 16 + 16 <= self.player.y):
+            self.occupied.add((x, y))
+            self.platforms.add(Platform("bedrock.png", (x * 16, y * 16), (16, 16)))
 
-    def load_scene(self, scene_number: int):
+    def load_scene(self, scene_number: str):
         self.occupied.clear()
         self.platforms.clear()
-        scene: dict = Stages.stages[scene_number]
+        scene: dict = self.stages[scene_number]
         self.platforms.update(Platform(*s) for s in scene["platforms"])
-        self.occupied.update(scene["occupied"])
+        self.occupied.update(tuple(o) for o in scene["occupied"])
         self.player.pos = scene["player"]
         self.cam.all = scene["cam"]
 
@@ -94,20 +98,20 @@ class Player:
 
     def walk(self, keys) -> None:
         self.vx = 0
-        if keys[pygame.K_LSHIFT]:
+        if keys[pygame.__getattribute__("K_" + self.game.controls["sneak"])]:
             self.speed = 1
             self.sneaking = True
-        elif keys[pygame.K_LCTRL]:
+        elif keys[pygame.__getattribute__("K_" + self.game.controls["sprint"])]:
             self.speed = 4
             self.sneaking = False
         else:
             self.speed = 2
             self.sneaking = False
-        if keys[pygame.K_a]:
+        if keys[pygame.__getattribute__("K_" + self.game.controls["left"])]:
             self.vx -= self.speed
-        elif keys[pygame.K_d]:
+        elif keys[pygame.__getattribute__("K_" + self.game.controls["right"])]:
             self.vx += self.speed
-        if self.grounded and keys[pygame.K_SPACE]:
+        if self.grounded and keys[pygame.__getattribute__("K_" + self.game.controls["jump"])]:
             self.vy -= self.jump_height
         self.vy += self.gravity
         self.move()
