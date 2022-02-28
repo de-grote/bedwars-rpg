@@ -9,14 +9,16 @@ This game is currently in development, don't have high expectations for individu
 * working collision
 * working sneaking, running, and walking
 * a (not so nice) scrolling camara
-* placeable blocks
+* placeable and breakable blocks
 * a way to make stages if you know what you're doing (loading in not included)
 * customisable controls
+* creative mode
 
 #### Things that will be added soon:
 
 * better camara scrolling
 * more and better assets (that aren't stolen)
+* a simple stage builder
 
 #### Things that will be added later:
 
@@ -34,8 +36,13 @@ This game is currently in development, don't have high expectations for individu
 * SPACE to jump
 * L-CTRL to sprint
 * L-SHIFT to sneak
-* any click to place block
+* right click to place block
+* left click to break block
 * Q to reload scene
+* E to enter creative mode
+* W and S to fly up and down
+
+Press SPACE in the air while in creative mode to fly.
 
 You can change the controls by changing the values in controls.json.
 
@@ -201,7 +208,7 @@ Make sure you have a python interpreter installed of version 3.10+,
 
 You also need to install pygame by running ``pip install pygame`` into the command line.
 
-If you already have it installed make sure its version 2.0.2+ using ``pip show pygame``,
+If you already have it installed make sure its version 2.1.2+ using ``pip show pygame``,
 
 It may work for pygame 2.0.0+ but no guarantees.
 

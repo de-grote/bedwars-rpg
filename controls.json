@@ -1,7 +1,11 @@
 {
   "left": "a",
   "right": "d",
+  "up": "w",
+  "down": "s",
   "jump": "SPACE",
   "sprint": "LCTRL",
-  "sneak": "LSHIFT"
+  "sneak": "LSHIFT",
+  "dev_reload": "q",
+  "dev_creative": "e"
 }
